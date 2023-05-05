@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33502.453
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenSSLUniversalPatcher", "OpenSSLUniversalPatcher.csproj", "{C5539661-1EB7-4AD5-96AC-5A3433AB135F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenSSLUniversalPatcher", "src/OpenSSLUniversalPatcher/OpenSSLUniversalPatcher.csproj", "{C5539661-1EB7-4AD5-96AC-5A3433AB135F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
