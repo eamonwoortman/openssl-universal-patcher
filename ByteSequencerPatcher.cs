@@ -41,7 +41,7 @@ class ByteSequencePatcher {
 	}
 
 	static List<SequencePair> LoadSequencePairs(string sequenceFile) {
-		string sequenceRegex = @"^(original|patched):\r?\n(?:#.*\r?\n)([0-9A-Fa-f]+(?:\s[0-9A-Fa-f]+)*)";
+		string sequenceRegex = @"^(?:#.*\r?\n)?(offset\: (?<offset>[\-]?[0-9]+))\r?\n(?:#.*\r?\n)(original): (?<original>[0-9A-Fa-f]+(?:\s[0-9A-Fa-f]+)*)\r?\n(?:#.*\r?\n)?(patched): (?<patched>[0-9A-Fa-f]+(?:\s[0-9A-Fa-f]+)*)";
 		string sequenceText = File.ReadAllText(sequenceFile);
 		List<SequencePair> sequencePairs = new List<SequencePair>();
 
