@@ -1,6 +1,4 @@
-﻿# unknown location
-offset: -1
-# lea     rax, [rsi+40h]
+﻿# lea     rax, [rsi+40h]
 original: 48 8D 46 40
 # lea     r8, [rsi+40h]
 patched: 4C 8D 46 40
