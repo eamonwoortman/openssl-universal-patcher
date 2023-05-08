@@ -14,8 +14,9 @@ namespace OpenSSLUniversalPatcher {
 
 			var inputFilePath = args[0];
 			var outputFilePath = args[1];
-			var patchFile = GetResource("Resources.openssl.universal.patch");
-			if (ByteSequencePatcher.Apply(inputFilePath, outputFilePath, patchFile)) {
+			var patchFileText = ReadTextResource("Resources.openssl.universal.patch");
+
+			if (ByteSequencePatcher.Apply(inputFilePath, outputFilePath, patchFileText)) {
 				Console.WriteLine("Successfully patched target file");
 			} else {
 				Console.WriteLine("Failed to patch the target file");
@@ -23,7 +24,7 @@ namespace OpenSSLUniversalPatcher {
 
 		}
 
-		public static string GetResource(string resourceFilePath) {
+		public static string ReadTextResource(string resourceFilePath) {
 			try {
 				var assembly = Assembly.GetExecutingAssembly();
 				var assemblyName = assembly.GetName().Name;

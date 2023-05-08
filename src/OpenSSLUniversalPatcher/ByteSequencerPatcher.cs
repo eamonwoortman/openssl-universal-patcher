@@ -1,21 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
 namespace OpenSSLUniversalPatcher {
 
 	class ByteSequencePatcher {
-		public static bool Apply(string inputPath, string outputPath, string patchFile) {
-			Debug.Assert(!string.IsNullOrEmpty(inputPath));
-			Debug.Assert(!string.IsNullOrEmpty(outputPath));
-			Debug.Assert(!string.IsNullOrEmpty(patchFile));
-
+		public static bool Apply(string inputPath, string outputPath, string patchFileText) {
 			byte[] originalBytes = File.ReadAllBytes(inputPath);
-			Patch patch = ParsePatchFile(patchFile);
+			Patch patch = ParsePatchFile(patchFileText);
 
-			List<PatternOffsets> offsets = FindSequencePattern(originalBytes, patch);
+			List<PatternOffsets> offsets = FindSequencePattern(originalBytes, patch.FirstSequence, patch.SecondSequence, patch.RelativeOffset);
 			if (offsets.Count == 0) {
 				Console.Error.WriteLine("Error, pattern not found in target.");
 				return false;
@@ -32,10 +27,12 @@ namespace OpenSSLUniversalPatcher {
 			var secondOffset = patternOffsets.SecondOffset;
 
 			// Apply the first sequence patch
-			Array.Copy(patch.FirstSequence.Patched, 0, originalBytes, firstOffset, patch.FirstSequence.Patched.Length);
+			var patchedBytes = patch.FirstSequence.Patched;
+			Array.Copy(patchedBytes, 0, originalBytes, firstOffset, patchedBytes.Length);
 
 			// Apply the second sequence patch
-			Array.Copy(patch.SecondSequence.Patched, 0, originalBytes, secondOffset, patch.SecondSequence.Patched.Length);
+			patchedBytes = patch.SecondSequence.Patched;
+			Array.Copy(patch.SecondSequence.Patched, 0, originalBytes, secondOffset, patchedBytes.Length);
 
 			// Write the patched bytes to the output file
 			File.WriteAllBytes(outputPath, originalBytes);
@@ -44,52 +41,17 @@ namespace OpenSSLUniversalPatcher {
 			return true;
 		}
 
-		struct PatternOffsets {
-			public int FirstOffset;
-			public int SecondOffset;
-		}
-
-		private static List<PatternOffsets> FindSequencePattern(byte[] originalBytes, Patch patch) {
-			List<PatternOffsets> offsets = new List<PatternOffsets>();
-			int currentOffset = 0;
-			int originalLength = originalBytes.Length;
-			while (currentOffset < originalLength) {
-				int firstSequenceIndex = FindSequence(originalBytes, patch.FirstSequence.Original, currentOffset, originalLength);
-				if (firstSequenceIndex == -1) {
-					break;
-				}
-
-				int secondOffset = firstSequenceIndex + patch.FirstSequence.Original.Length + patch.RelativeOffset;
-				int secondSequenceIndex = FindSequence(originalBytes, patch.SecondSequence.Original, secondOffset, secondOffset + patch.SecondSequence.Original.Length);
-				if (secondSequenceIndex == -1) {
-					currentOffset = secondOffset + patch.SecondSequence.Original.Length;
-					continue;
-				}
-				
-				PatternOffsets offsetPair = new PatternOffsets { FirstOffset = firstSequenceIndex, SecondOffset = secondSequenceIndex };
-				offsets.Add(offsetPair);
-
-				currentOffset = secondSequenceIndex + patch.SecondSequence.Original.Length;
-			}
-			return offsets;
-		}
-
-		static string TrimVariablePart(string inputLine) {
-			int index = inputLine.IndexOf(':') + 2; // include character and space
-			return inputLine.Substring(index); 
-		}
-
 		static Patch ParsePatchFile(string sequenceFile) {
 			string[] patchLines = sequenceFile.Replace("\r\n", "\n").Split('\n');
 
 			SequencePair firstPair = new SequencePair();
-			firstPair.Original = ParseByteSequence(TrimVariablePart(patchLines[1]));
-			firstPair.Patched = ParseByteSequence(TrimVariablePart(patchLines[3]));
+			firstPair.Original = ParseHexByteSequence(TrimVariablePart(patchLines[1]));
+			firstPair.Patched = ParseHexByteSequence(TrimVariablePart(patchLines[3]));
 
 			SequencePair secondPair = new SequencePair();
-			secondPair.Original = ParseByteSequence(TrimVariablePart(patchLines[7]));
-			secondPair.Patched = ParseByteSequence(TrimVariablePart(patchLines[9]));
-			
+			secondPair.Original = ParseHexByteSequence(TrimVariablePart(patchLines[7]));
+			secondPair.Patched = ParseHexByteSequence(TrimVariablePart(patchLines[9]));
+
 			int offset;
 			int.TryParse(TrimVariablePart(patchLines[5]), out offset);
 
@@ -99,15 +61,32 @@ namespace OpenSSLUniversalPatcher {
 			patch.SecondSequence = secondPair;
 			return patch;
 		}
-
-		static byte[] ParseByteSequence(string line) {
-			string[] parts = line.Split(' ');
-			return parts.Select(part => Convert.ToByte(part, 16)).ToArray();
+		
+		private static List<PatternOffsets> FindSequencePattern(byte[] originalBytes, SequencePair firstSequence, SequencePair secondSequence, int relativeOffset) {
+			var offsets = new List<PatternOffsets>();
+			var currentOffset = 0;
+			var originalLength = originalBytes.Length;
+			while (currentOffset < originalLength) {
+				int firstSequenceIndex = FindSequence(originalBytes, firstSequence.Original, currentOffset, originalLength);
+				if (firstSequenceIndex == -1) {
+					break;
+				}
+				int secondOffset = firstSequenceIndex + firstSequence.Original.Length + relativeOffset; // Start from where found the first sequence, offseted by some bytes
+				int maxLookupLength = secondOffset + secondSequence.Original.Length; // Only find the next sequence within the acceptable range
+				int secondSequenceIndex = FindSequence(originalBytes, secondSequence.Original, secondOffset, maxLookupLength);
+				if (secondSequenceIndex == -1) {
+					currentOffset = secondOffset + secondSequence.Original.Length;
+					continue;
+				}
+				offsets.Add(new PatternOffsets { FirstOffset = firstSequenceIndex, SecondOffset = secondSequenceIndex });
+				currentOffset = secondSequenceIndex + secondSequence.Original.Length; // Continue looking for our pattern from this offset, until none is found
+			}
+			return offsets;
 		}
+
 
 		public static int FindSequence(byte[] data, byte[] sequence, int startOffset, int maxLookupLength) {
 			int offset = -1;
-
 			for (int i = startOffset; i < maxLookupLength - sequence.Length + 1; i++) {
 				bool found = true;
 				for (int j = 0; j < sequence.Length; j++) {
@@ -116,25 +95,37 @@ namespace OpenSSLUniversalPatcher {
 						break;
 					}
 				}
-
 				if (found) {
 					offset = i;
 					break;
 				}
 			}
-
 			return offset;
 		}
+				
+		static string TrimVariablePart(string inputLine) {
+			int index = inputLine.IndexOf(':') + 2; // include character and space
+			return inputLine.Substring(index); 
+		}
 
+		static byte[] ParseHexByteSequence(string line) {
+			string[] parts = line.Split(' ');
+			return parts.Select(part => Convert.ToByte(part, 16)).ToArray();
+		}
 	}
-
+	
 	class Patch {
 		public SequencePair FirstSequence;
 		public SequencePair SecondSequence;
 		public int RelativeOffset;
 	}
+	
+	struct PatternOffsets {
+		public int FirstOffset;
+		public int SecondOffset;
+	}
 
-	class SequencePair {
+	struct SequencePair {
 		public byte[] Original { get; set; }
 		public byte[] Patched { get; set; }
 	}
