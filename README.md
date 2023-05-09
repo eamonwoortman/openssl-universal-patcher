@@ -10,7 +10,6 @@ OpenSSL Universal Patcher is a command-line tool designed to patch 64-bit Window
 
 - [Installation](#installation)
 - [Usage](#usage)
-- [Contributing](#contributing)
 - [License](#license)
 
 ## Installation
@@ -33,17 +32,6 @@ For example, to patch a file called `old-binary.exe` and save the patched file a
 ```
 OpenSSLUniversalPatcher.exe old-binary.exe new-binary.exe
 ```
-
-## Contributing
-
-We welcome contributions to the OpenSSL Universal Patcher project. If you'd like to contribute, please follow these steps:
-
-1. Fork the repository.
-2. Create a new branch with a descriptive name.
-3. Commit your changes to the new branch.
-4. Create a pull request and describe your changes in detail.
-
-For more information on contributing, please read our [CONTRIBUTING.md](CONTRIBUTING.md) file.
 
 ## License
 
