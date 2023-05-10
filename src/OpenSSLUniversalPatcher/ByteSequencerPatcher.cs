@@ -113,21 +113,21 @@ namespace OpenSSLUniversalPatcher {
 			return parts.Select(part => Convert.ToByte(part, 16)).ToArray();
 		}
 	}
-	
-	class Patch {
-		public SequencePair FirstSequence;
-		public SequencePair SecondSequence;
-		public int RelativeOffset;
-	}
-	
+
 	struct PatternOffsets {
 		public int FirstOffset;
 		public int SecondOffset;
 	}
 
 	struct SequencePair {
-		public byte[] Original { get; set; }
-		public byte[] Patched { get; set; }
+		public byte[] Original;
+		public byte[] Patched;
 	}
+
+	struct Patch {
+		public SequencePair FirstSequence;
+		public SequencePair SecondSequence;
+		public int RelativeOffset;
+	}	
 
 }
