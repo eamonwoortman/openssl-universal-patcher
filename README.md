@@ -4,6 +4,8 @@ OpenSSL Universal Patcher is a command-line tool designed to patch 64-bit Window
 
 *⚠️NOTE: This patcher was created for a specific Unity 5.4.0f3 game, and although it aims to be an universal patcher, it may not work on your binary. Having that said, I have tested it on an Unreal 4.21 game build and it successfully patched that as well.*
 
+I wrote a blog article on how this patcher came to be, you can [read it here](https://www.eamonwoortman.nl/openssl-binary-patching/) if you're interested.
+
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/eamonw)
 
 ## Table of Contents
